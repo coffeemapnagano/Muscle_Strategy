@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>筋トレ戦略ボード</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=Roboto:wght@500;700;900&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            background-color: #f8fafc; /* Slate 50 */
+            color: #0f172a; /* Slate 900 */
+            -webkit-tap-highlight-color: transparent;
+        }
+        .font-num { font-family: 'Roboto', sans-serif; }
+
+        /* Chart Container */
+        .chart-container {
+            position: relative;
+            width: 100%;
+            height: 250px;
+            margin: 0 auto;
+        }
+
+        /* Custom Scrollbar */
+        .hide-scroll::-webkit-scrollbar { display: none; }
+        .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* Navigation */
+        .nav-item {
+            position: relative;
+            transition: all 0.2s;
+            opacity: 0.6;
+        }
+        .nav-item.active {
+            opacity: 1;
+            color: #2563eb;
+        }
+        .nav-item.active::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 4px;
+            height: 4px;
+            background-color: #2563eb;
+            border-radius: 50%;
+        }
+
+        /* Day Selector Fix */
+        #day-selector {
+            padding-top: 0.5rem; 
+            padding-bottom: 0.5rem;
+            /* 右側に十分な余白を持たせて見切れを防ぐ */
+            padding-right: 2rem; 
+        }
+        /* 最後の子要素にマージンを追加してスクロール領域を確保 */
+        #day-selector button:last-child {
+            margin-right: 1rem;
+        }
+
+        /* Metric Box Mobile Optimized */
+        .metric-box {
+            background-color: #f1f5f9;
+            border-radius: 0.5rem;
+            text-align: center;
+            padding: 0.3rem 0.1rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            height: 100%;
+        }
+        
+        /* Animations */
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-enter {
+            animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+    </style>
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+</head>
+<body class="min-h-screen pb-safe">
+
+    <!-- Sticky Header & Nav -->
+    <header class="bg-white/95 backdrop-blur-sm sticky top-0 z-50 border-b border-slate-200 shadow-sm">
+        <div class="px-4 py-3 flex justify-between items-center">
+            <h1 class="text-xl font-black italic text-slate-900 tracking-tighter">
+                MUSCLE<span class="text-blue-600">STRATEGY</span>
+            </h1>
+            <span class="text-[0.6rem] font-bold bg-slate-100 text-slate-500 px-2 py-1 rounded-full">v2.2 Mobile</span>
+        </div>
+        
+        <!-- Mobile Tab Navigation -->
+        <nav class="flex justify-around items-center px-2 py-2 text-xs font-bold text-slate-500 border-t border-slate-100">
+            <button onclick="switchTab('schedule')" id="nav-schedule" class="nav-item flex-1 py-2 text-center active">
+                <span class="block text-lg mb-0.5">📅</span>
+                週間メニュー
+            </button>
+            <button onclick="switchTab('strategy')" id="nav-strategy" class="nav-item flex-1 py-2 text-center">
+                <span class="block text-lg mb-0.5">💊</span>
+                サプリ・栄養
+            </button>
+            <button onclick="switchTab('nutrition')" id="nav-nutrition" class="nav-item flex-1 py-2 text-center">
+                <span class="block text-lg mb-0.5">🔢</span>
+                計算機
+            </button>
+            <button onclick="switchTab('core')" id="nav-core" class="nav-item flex-1 py-2 text-center">
+                <span class="block text-lg mb-0.5">⏳</span>
+                ウエスト
+            </button>
+        </nav>
+    </header>
+
+    <!-- Main Content -->
+    <main class="w-full px-4 py-4 max-w-md mx-auto">
+
+        <!-- VIEW: SCHEDULE (Default for Mobile) -->
+        <div id="view-schedule" class="view-section animate-enter">
+            
+            <!-- Day Selector (Scrollable) -->
+            <div class="flex overflow-x-auto space-x-3 pl-1 hide-scroll w-full box-border" id="day-selector">
+                <!-- Buttons injected via JS -->
+            </div>
+
+            <div id="workout-container" class="mt-2">
+                <!-- Daily Header -->
+                <div class="flex justify-between items-end mb-4 bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+                    <div>
+                        <h2 class="text-2xl font-black text-slate-800 leading-none tracking-tight" id="workout-title">PUSH DAY</h2>
+                        <p class="text-[0.65rem] font-bold text-slate-400 mt-1 uppercase tracking-widest" id="workout-focus">Chest / Shoulders</p>
+                    </div>
+                    <div class="text-right">
+                         <span class="text-[0.65rem] font-bold bg-blue-50 text-blue-600 px-2 py-1 rounded border border-blue-100" id="workout-cardio">🏃 30min</span>
+                    </div>
+                </div>
+
+                <!-- Exercise List -->
+                <div class="space-y-3 pb-8" id="workout-list">
+                    <!-- Injected JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW: SUPPLEMENTS & NUTRITION INFO -->
+        <div id="view-strategy" class="view-section hidden">
+            
+            <!-- Supplements Card -->
+            <div class="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl p-5 text-white shadow-lg mb-6">
+                <h2 class="text-lg font-bold mb-4 flex items-center">
+                    <span class="mr-2">💊</span> 推奨サプリメント
+                </h2>
+                
+                <div class="space-y-4">
+                    <!-- Creatine -->
+                    <div class="flex items-start bg-slate-800/50 p-3 rounded-xl border border-slate-700">
+                        <div class="mr-3 text-2xl">⚡</div>
+                        <div>
+                            <h3 class="text-sm font-bold text-blue-400">クレアチン (5g/日)</h3>
+                            <p class="text-xs text-slate-300 mt-1 leading-relaxed">
+                                筋力出力と筋肉内の水分量を向上させます。毎日摂取することで効果を発揮します。
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Multivitamin -->
+                    <div class="flex items-start bg-slate-800/50 p-3 rounded-xl border border-slate-700">
+                        <div class="mr-3 text-2xl">🛡️</div>
+                        <div>
+                            <h3 class="text-sm font-bold text-green-400">マルチビタミン</h3>
+                            <p class="text-xs text-slate-300 mt-1 leading-relaxed">
+                                代謝の潤滑油。食事で不足しがちな微量栄養素を補い、コンディションを整えます。
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Whey Protein -->
+                    <div class="flex items-start bg-slate-800/50 p-3 rounded-xl border border-slate-700">
+                        <div class="mr-3 text-2xl">🥤</div>
+                        <div>
+                            <h3 class="text-sm font-bold text-orange-400">ホエイプロテイン</h3>
+                            <p class="text-xs text-slate-300 mt-1 leading-relaxed">
+                                トレーニング直後のゴールデンタイムに。吸収が早く、筋肉の分解を即座に止めます。
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <h3 class="text-sm font-black text-slate-800 mb-3 px-1">栄養摂取の基本ルール</h3>
+            <div class="space-y-3 pb-8">
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+                    <div class="text-blue-600 font-black mb-1">01. タンパク質</div>
+                    <p class="text-xs text-slate-600 font-bold mb-1">目標: 160g / 日</p>
+                    <p class="text-[0.7rem] text-slate-400">1食で摂りすぎず、4-5回に分けて血中濃度をキープ。</p>
+                </div>
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+                    <div class="text-blue-600 font-black mb-1">02. 炭水化物</div>
+                    <p class="text-xs text-slate-600 font-bold mb-1">集中: トレ前・トレ後</p>
+                    <p class="text-[0.7rem] text-slate-400">2時間前におにぎり等。直後に糖質＋プロテイン。</p>
+                </div>
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+                    <div class="text-blue-600 font-black mb-1">03. 脂質</div>
+                    <p class="text-xs text-slate-600 font-bold mb-1">良質な油を選ぶ</p>
+                    <p class="text-[0.7rem] text-slate-400">魚、アボカド、卵。揚げ物は控える。</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW: CALCULATOR -->
+        <div id="view-nutrition" class="view-section hidden">
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+                <h3 class="text-lg font-black text-slate-800 mb-4">マクロ計算機</h3>
+                
+                <div class="grid grid-cols-2 gap-3 mb-6">
+                    <div>
+                        <label class="block text-[0.6rem] font-bold text-slate-400 mb-1">身長 (cm)</label>
+                        <input type="number" id="input-height" value="170" class="w-full bg-slate-50 border border-slate-200 rounded p-3 font-bold text-slate-800 text-center focus:outline-none focus:border-blue-500" oninput="calculateNutrition()">
+                    </div>
+                    <div>
+                        <label class="block text-[0.6rem] font-bold text-slate-400 mb-1">体重 (kg)</label>
+                        <input type="number" id="input-weight" value="72" class="w-full bg-slate-50 border border-slate-200 rounded p-3 font-bold text-slate-800 text-center focus:outline-none focus:border-blue-500" oninput="calculateNutrition()">
+                    </div>
+                </div>
+
+                <div class="text-center mb-6 p-4 bg-slate-50 rounded-xl">
+                    <p class="text-[0.6rem] font-bold text-slate-400 uppercase tracking-widest">Target Calories</p>
+                    <div class="text-4xl font-black text-slate-800 font-num mt-1" id="display-calories">2,880</div>
+                    <div class="text-xs text-slate-400">kcal / day</div>
+                </div>
+
+                <div class="chart-container mb-6">
+                    <canvas id="nutritionChart"></canvas>
+                </div>
+
+                <!-- Stacked Macro List -->
+                <div class="space-y-2 pb-8">
+                    <div class="flex justify-between items-center p-3 bg-blue-50 rounded-lg border border-blue-100">
+                        <span class="text-xs font-bold text-blue-500">PROTEIN</span>
+                        <span class="text-xl font-black text-slate-800 font-num" id="display-protein">158g</span>
+                    </div>
+                    <div class="flex justify-between items-center p-3 bg-yellow-50 rounded-lg border border-yellow-100">
+                        <span class="text-xs font-bold text-yellow-600">FAT</span>
+                        <span class="text-xl font-black text-slate-800 font-num" id="display-fat">72g</span>
+                    </div>
+                    <div class="flex justify-between items-center p-3 bg-orange-50 rounded-lg border border-orange-100">
+                        <span class="text-xs font-bold text-orange-500">CARBS</span>
+                        <span class="text-xl font-black text-slate-800 font-num" id="display-carbs">402g</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW: CORE -->
+        <div id="view-core" class="view-section hidden">
+            <div class="bg-gradient-to-b from-slate-900 to-slate-800 text-white rounded-2xl p-6 text-center shadow-lg mb-6">
+                <div class="text-4xl mb-2">⏳</div>
+                <h3 class="text-xl font-black mb-1">TINY WAIST</h3>
+                <p class="text-slate-400 text-xs">ウエストを細く保つメソッド</p>
+            </div>
+
+            <div class="space-y-4 pb-8">
+                <div class="bg-white p-5 rounded-xl border border-slate-100 shadow-sm">
+                    <h4 class="font-bold text-blue-600 text-lg mb-2">ドローイン (Vacuum)</h4>
+                    <p class="text-xs text-slate-600 leading-relaxed mb-3">
+                        お腹を極限まで凹ませて、天然のコルセット「腹横筋」を強化します。
+                    </p>
+                    <div class="bg-slate-50 p-3 rounded text-xs font-bold text-slate-500 border border-slate-200 text-center">
+                        息を吐ききる → 凹ます → 30秒
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-xl border border-slate-100 shadow-sm">
+                    <h4 class="font-bold text-blue-600 text-lg mb-2">クランチ (Etching)</h4>
+                    <p class="text-xs text-slate-600 leading-relaxed">
+                        重りは持ちません。腹直筋の「溝」を深くするため、自重で20回以上行い、焼けつく感覚（バーン）を狙います。
+                    </p>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- LOGIC -->
+    <script>
+        // --- DATA STORE ---
+        const appData = {
+            schedule: [
+                {
+                    id: 'mon', day: '月', title: 'PUSH DAY', focus: '胸・肩・三頭', cardio: '有酸素 30分',
+                    exercises: [
+                        { name: 'DB Floor Press', weight: '20-26kg', sets: '3', reps: '8-10', tip: '床で肘を止めてプレス' },
+                        { name: 'Decline Push-up', weight: '自重', sets: '3', reps: '限界', tip: '足を椅子に乗せる' },
+                        { name: 'DB Shoulder Press', weight: '14-20kg', sets: '3', reps: '10-12', tip: '座って行う' },
+                        { name: 'Side Raise', weight: '5-8kg', sets: '4', reps: '15-20', tip: '反動禁止・丁寧に行う' },
+                        { name: 'French Press', weight: '10-14kg', sets: '3', reps: '15', tip: '肘を固定する' }
+                    ]
+                },
+                {
+                    id: 'tue', day: '火', title: 'PULL DAY', focus: '背中・二頭', cardio: 'なし',
+                    exercises: [
+                        { name: 'One-Hand Row', weight: '20-28kg', sets: '3', reps: '10-12', tip: '椅子に手をつく' },
+                        { name: 'DB Pullover', weight: '14-18kg', sets: '3', reps: '12-15', tip: '広背筋を伸ばす' },
+                        { name: 'Rear Delt Raise', weight: '4-7kg', sets: '3', reps: '15-20', tip: '前傾姿勢で' },
+                        { name: 'DB Shrug', weight: '20-30kg', sets: '3', reps: '15', tip: 'トップで止める' },
+                        { name: 'DB Curl', weight: '10-14kg', sets: '3', reps: '12-15', tip: '小指を巻き込む' }
+                    ]
+                },
+                {
+                    id: 'wed', day: '水', title: 'LEGS DAY', focus: '脚・腹', cardio: '有酸素 30分',
+                    exercises: [
+                        { name: 'Bulgarian Squat', weight: '10-16kg', sets: '3', reps: '10/足', tip: '後ろ足を椅子に' },
+                        { name: 'Goblet Squat', weight: '20-30kg', sets: '3', reps: '15-20', tip: '胸でダンベルを持つ' },
+                        { name: 'DB RDL', weight: '20-26kg', sets: '3', reps: '12-15', tip: 'もも裏ストレッチ' },
+                        { name: 'Calf Raise', weight: '10kg', sets: '3', reps: '20', tip: '壁に手をつく' },
+                        { name: 'Crunch', weight: '自重', sets: '3', reps: '限界', tip: '休憩中にドローイン' }
+                    ]
+                },
+                {
+                    id: 'thu', day: '木', title: 'REST', focus: '完全休養', cardio: '散歩(任意)',
+                    exercises: [
+                        { name: 'Stretching', weight: '-', sets: '1', reps: '20min', tip: '全身のケア' }
+                    ]
+                },
+                {
+                    id: 'fri', day: '金', title: 'UPPER', focus: '弱点特化', cardio: '有酸素 30分',
+                    exercises: [
+                        { name: 'Arnold Press', weight: '12-16kg', sets: '3', reps: '10-12', tip: '回転させてプレス' },
+                        { name: 'Side Raise (Vol)', weight: '5-8kg', sets: '5', reps: '15-20', tip: '高ボリューム' },
+                        { name: 'Incline Push-up', weight: '自重', sets: '3', reps: '限界', tip: '手を椅子に乗せる' },
+                        { name: 'One-Hand Row', weight: '18-24kg', sets: '3', reps: '12-15', tip: '丁寧に引く' }
+                    ]
+                },
+                {
+                    id: 'sat', day: '土', title: 'LOWER', focus: '脚・体幹', cardio: 'なし',
+                    exercises: [
+                        { name: 'Lunge Walk', weight: '8-14kg', sets: '3', reps: '20歩', tip: '大股で歩く' },
+                        { name: 'Hip Thrust', weight: '10-20kg', sets: '3', reps: '12-15', tip: '背中を椅子に' },
+                        { name: 'Plank', weight: '自重', sets: '3', reps: '60s', tip: '身体を一直線に' },
+                        { name: 'Reverse Crunch', weight: '自重', sets: '3', reps: '15-20', tip: '下腹部狙い' }
+                    ]
+                },
+                {
+                    id: 'sun', day: '日', title: 'REST', focus: '完全休養', cardio: 'なし',
+                    exercises: [
+                        { name: 'Relax', weight: '-', sets: '-', reps: '-', tip: '食事準備など' }
+                    ]
+                }
+            ]
+        };
+
+        // --- STATE & INIT ---
+        let currentTab = 'schedule'; // Mobile Default: Schedule
+        let currentDayId = 'mon';
+        let donutChart = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            renderDaySelector();
+            renderWorkoutDay('mon');
+            initChart();
+            calculateNutrition();
+            switchTab('schedule');
+        });
+
+        // --- NAVIGATION ---
+        function switchTab(tabId) {
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            document.getElementById(`nav-${tabId}`).classList.add('active');
+            
+            document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
+            const view = document.getElementById(`view-${tabId}`);
+            view.classList.remove('hidden');
+            
+            view.classList.remove('animate-enter');
+            void view.offsetWidth; 
+            view.classList.add('animate-enter');
+        }
+
+        // --- SCHEDULE RENDERER ---
+        function renderDaySelector() {
+            const container = document.getElementById('day-selector');
+            container.innerHTML = appData.schedule.map(day => `
+                <button 
+                    onclick="renderWorkoutDay('${day.id}')"
+                    class="day-btn-item flex-shrink-0 w-14 h-16 rounded-xl flex flex-col items-center justify-center transition-all duration-200 border border-slate-100 shadow-sm ${day.id === currentDayId ? 'bg-slate-800 text-white transform -translate-y-1 shadow-md ring-2 ring-slate-800 ring-offset-2' : 'bg-white text-slate-400'}"
+                    id="btn-${day.id}"
+                >
+                    <span class="text-xs font-black mb-1">${day.day}</span>
+                    <span class="text-[0.65rem] opacity-60 font-bold uppercase">${day.id}</span>
+                </button>
+            `).join('');
+        }
+
+        function renderWorkoutDay(dayId) {
+            currentDayId = dayId;
+            // Update buttons styling manually for perf
+            document.querySelectorAll('.day-btn-item').forEach(btn => {
+                btn.className = 'day-btn-item flex-shrink-0 w-14 h-16 rounded-xl flex flex-col items-center justify-center transition-all duration-200 border border-slate-100 shadow-sm bg-white text-slate-400';
+            });
+            const activeBtn = document.getElementById(`btn-${dayId}`);
+            activeBtn.className = 'day-btn-item flex-shrink-0 w-14 h-16 rounded-xl flex flex-col items-center justify-center transition-all duration-200 border border-slate-100 bg-slate-800 text-white transform -translate-y-1 shadow-md ring-2 ring-slate-800 ring-offset-1';
+
+            const dayData = appData.schedule.find(d => d.id === dayId);
+            
+            document.getElementById('workout-title').innerText = dayData.title;
+            document.getElementById('workout-focus').innerText = dayData.focus;
+            document.getElementById('workout-cardio').innerText = dayData.cardio;
+
+            const listEl = document.getElementById('workout-list');
+            listEl.innerHTML = dayData.exercises.map(ex => `
+                <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-100 flex flex-col relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-1 h-full bg-slate-800"></div>
+                    
+                    <!-- Header -->
+                    <div class="pl-3 mb-3">
+                        <h4 class="font-black text-slate-800 text-lg leading-tight">${ex.name}</h4>
+                        <p class="text-xs font-bold text-slate-400 mt-1">💡 ${ex.tip}</p>
+                    </div>
+
+                    <!-- Metrics Grid -->
+                    <div class="grid grid-cols-3 gap-2 pl-3">
+                        <div class="metric-box">
+                            <span class="text-[0.55rem] font-bold text-slate-400 uppercase">Weight</span>
+                            <span class="text-sm font-black text-slate-800 font-num">${ex.weight}</span>
+                        </div>
+                        <div class="metric-box">
+                            <span class="text-[0.55rem] font-bold text-slate-400 uppercase">Sets</span>
+                            <span class="text-sm font-black text-slate-800 font-num">${ex.sets}</span>
+                        </div>
+                        <div class="metric-box">
+                            <span class="text-[0.55rem] font-bold text-slate-400 uppercase">Reps</span>
+                            <span class="text-sm font-black text-slate-800 font-num">${ex.reps}</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // --- NUTRITION ---
+        function calculateNutrition() {
+            const h = document.getElementById('input-height').value;
+            const w = document.getElementById('input-weight').value;
+            if(!w || w <= 0) return;
+
+            const proteinG = Math.round(w * 2.2);
+            const fatG = Math.round(w * 1.0);
+            const totalCals = Math.round(w * 40); 
+            
+            const pCals = proteinG * 4;
+            const fCals = fatG * 9;
+            const remainderCals = totalCals - pCals - fCals;
+            const carbG = Math.round(remainderCals / 4);
+
+            document.getElementById('display-calories').innerText = totalCals.toLocaleString();
+            document.getElementById('display-protein').innerText = proteinG + 'g';
+            document.getElementById('display-fat').innerText = fatG + 'g';
+            document.getElementById('display-carbs').innerText = carbG + 'g';
+
+            if(donutChart) {
+                donutChart.data.datasets[0].data = [proteinG, fatG, carbG];
+                donutChart.update();
+            }
+        }
+
+        function initChart() {
+            const ctx = document.getElementById('nutritionChart').getContext('2d');
+            Chart.defaults.font.family = "'Roboto', sans-serif";
+            
+            donutChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Protein', 'Fat', 'Carbs'],
+                    datasets: [{
+                        data: [158, 72, 400],
+                        backgroundColor: ['#3b82f6', '#eab308', '#f97316'],
+                        borderWidth: 0,
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    responsive: true,
+                    cutout: '75%',
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
